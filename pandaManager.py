@@ -1,3 +1,4 @@
+from __future__ import division
 import pandas as pd  
 import requests
 import os
@@ -5,6 +6,9 @@ import numpy as np
 import csv
 import matplotlib.pyplot as plt  
 from sklearn import preprocessing
+from gene import Gene
+from breeder import Breeder
+
 
 def dateDifferenceYears( dateBegin , dateEnd ):
 	yearBegin = dateBegin.split('-')[0]
@@ -30,18 +34,16 @@ def analyzeData( path , dateRange, dateBegin, dateEnd, closeColumname ):
 	sharpeOb = annualizedReturnOb / stdDevOb
 	return annualizedReturnOb, stdDevOb , sharpeOb, dfDatesOb
 
-def tripleMerger( first, second, third , k1, k2, k3, n1, n2, n3, dateBegin, dateEnd, it ):
+def tripleMerger( first, second, third , gene, n1, n2, n3, dateBegin, dateEnd, it , isPlot ):
 	dfDatesGeneral = first.join( second )
 	dfDatesGeneral = dfDatesGeneral.join( third )
-	kBond = 2
-	kStock = 1
-	kGold = 1
-	totalSum = dfDatesGeneral.loc[: , n1] * k1 + dfDatesGeneral.loc[: , n2] * k2 + dfDatesGeneral.loc[: , n3] * k3
-	dfDatesGeneral['total' + str(it)] = totalSum / (k1 + k2 + k3) #beacuse it is an average in my opinion
+	totalSum = dfDatesGeneral.loc[: , n1] * gene.w1 + dfDatesGeneral.loc[: , n2] * gene.w2 + dfDatesGeneral.loc[: , n3] * gene.w3
+	dfDatesGeneral['total' + str(it)] = totalSum #beacuse it is an average in my opinion
 	stdDevTot = getStdDev(dfDatesGeneral['total' + str(it)])
 	annualizedReturnTot = getAnnualizedReturn( dateBegin, dateEnd, 'total' + str(it), dfDatesGeneral )
 	sharpeTot = annualizedReturnTot / stdDevTot
-	dfDatesGeneral.plot()
+	if(isPlot == 1):
+		dfDatesGeneral.plot()
 	return annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral
 
 def main():
@@ -78,19 +80,55 @@ def main():
 	print('\n\n')
 
 	print ('\n\n\n-------------------------- AI PART ---------------------------\n\n\n')
-	print( '##########################  TOTAL  ##########################' )
-	annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , 0.5, 0.25, 0.25, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '1')
+	print( '##########################  TOTAL  ##########################\n' )
+
+	epochs = 60
+	population = 60
+	breeder = Breeder()
+
+
+
+	generation = breeder.create( population )
+
+	for epoch in range( 0 , epochs ):
+
+		generation = breeder.populate( generation , population )	
+		for i in range( 0, len(generation) ):
+			#generation[i].printStr()
+			g = generation[i]	
+			annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , g, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '1' , 0)
+			g.sharpe = sharpeTot
+			#print( 'population sharpe : ' + str( g.sharpe ) )
+
+		generation = breeder.getBests( len(generation) * 0.5 , generation )	
+		topBest = breeder.getBests( 1, generation )[0]	
+		print( "sharpe ration epoch " + str(epoch) + ":  " + str(topBest.sharpe) )
+		
+	topBest = breeder.getBests( 1, generation )[0]	
+	topBest.printStr()
+
+	#gene1 = Gene(0.5,0.25,0.25)
+	#annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , gene1, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '1', 0)
 	#print( 'standard deviation Total: ' + str(stdDevTot) )
 	#print( 'annualized return total: ' + str(annualizedReturnTot) )
-	print( 'Sharpe Total: ' + str( sharpeTot ) )
-	annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , 0.25, 0.5, 0.25, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '2')
+	#print( 'Sharpe Total: ' + str( sharpeTot ) )
+
+	#gene2 = Gene(0.25,0.5,0.25)
+	#annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , gene2, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '2', 0)
 	#print( 'standard deviation Total: ' + str(stdDevTot) )
 	#print( 'annualized return total: ' + str(annualizedReturnTot) )
-	print( 'Sharpe Total: ' + str( sharpeTot ) )
-	annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , 0.25, 0.25, 0.5, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '3')
+	#print( 'Sharpe Total: ' + str( sharpeTot ) )
+	
+	#gene3 = Gene(0.25,0.25,0.5)
+	#annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , gene3, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '3', 0)
 	#print( 'standard deviation Total: ' + str(stdDevTot) )
 	#print( 'annualized return total: ' + str(annualizedReturnTot) )
-	print( 'Sharpe Total: ' + str( sharpeTot ) )
+	#print( 'Sharpe Total: ' + str( sharpeTot ) )
+
+	annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , topBest, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '4', 1)
+	print( 'standard deviation Total AI-CREATURE: ' + str(stdDevTot) )
+	print( 'annualized return total AI-CREATURE: ' + str(annualizedReturnTot) )
+	print( 'Sharpe Total AI-CREATURE: ' + str( sharpeTot ) )
 	
 
 	print('\n\n')
