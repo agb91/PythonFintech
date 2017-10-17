@@ -34,19 +34,33 @@ def analyzeData( path , dateRange, dateBegin, dateEnd, closeColumname ):
 	sharpeOb = annualizedReturnOb / stdDevOb
 	return annualizedReturnOb, stdDevOb , sharpeOb, dfDatesOb
 
+def addDD( df, colTotalName ):
+	maxSince = 0.0
+	DDs = []
+	for index, row in df.iterrows():
+		if( row[colTotalName] > maxSince ):
+			maxSince = row[colTotalName]
+		DD = ((maxSince - row[colTotalName]) / maxSince ) * 100.0
+		if(DD < 0.0 ):
+			DD = 0.0	
+		DDs.append( DD )
+	df[ "DDs" ] = DDs 
+	return df
+
 def tripleMerger( first, second, third , gene, n1, n2, n3, dateBegin, dateEnd, it , isPlot ):
 	dfDatesGeneral = first.join( second )
 	dfDatesGeneral = dfDatesGeneral.join( third )
 	totalSum = dfDatesGeneral.loc[: , n1] * gene.w1 + dfDatesGeneral.loc[: , n2] * gene.w2 + dfDatesGeneral.loc[: , n3] * gene.w3
 	dfDatesGeneral['total' + str(it)] = totalSum 
-	
+	dfDatesGeneral = addDD(dfDatesGeneral , 'total' + str(it) )
 	stdDevTot = getStdDev(dfDatesGeneral['total' + str(it)])
 	annualizedReturnTot = getAnnualizedReturn( dateBegin, dateEnd, 'total' + str(it), dfDatesGeneral )
-	sharpeTot = annualizedReturnTot / stdDevTot
-
+	sharpeTot = annualizedReturnTot / stdDevTot 
+	sharpeTotAdj = sharpeTot - ( dfDatesGeneral["DDs"].max() / 300.0 ) 
+	
 	if(isPlot == 1):
 		dfDatesGeneral.plot()
-	return annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral
+	return annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral , sharpeTotAdj
 
 def main():
 	#set date range
@@ -84,8 +98,8 @@ def main():
 	print ('\n\n\n-------------------------- AI PART ---------------------------\n\n\n')
 	print( '##########################  TOTAL  ##########################\n' )
 
-	epochs = 60
-	population = 60
+	epochs = 30
+	population = 20
 	breeder = Breeder()
 
 
@@ -98,8 +112,8 @@ def main():
 		for i in range( 0, len(generation) ):
 			#generation[i].printStr()
 			g = generation[i]	
-			annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , g, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '1' , 0)
-			g.sharpe = sharpeTot
+			annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral, sharpeTotAdj = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , g, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '1' , 0)
+			g.sharpe = sharpeTotAdj
 			#print( 'population sharpe : ' + str( g.sharpe ) )
 
 		generation = breeder.getBests( len(generation) * 0.5 , generation )	
@@ -127,7 +141,7 @@ def main():
 	#print( 'annualized return total: ' + str(annualizedReturnTot) )
 	#print( 'Sharpe Total: ' + str( sharpeTot ) )
 
-	annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , topBest, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '4', 1)
+	annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral, sharpeTotAdj = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , topBest, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '4', 1)
 	print( 'standard deviation Total AI-CREATURE: ' + str(stdDevTot) )
 	print( 'annualized return total AI-CREATURE: ' + str(annualizedReturnTot) )
 	print( 'Sharpe Total AI-CREATURE: ' + str( sharpeTot ) )
