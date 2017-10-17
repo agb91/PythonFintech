@@ -38,10 +38,12 @@ def tripleMerger( first, second, third , gene, n1, n2, n3, dateBegin, dateEnd, i
 	dfDatesGeneral = first.join( second )
 	dfDatesGeneral = dfDatesGeneral.join( third )
 	totalSum = dfDatesGeneral.loc[: , n1] * gene.w1 + dfDatesGeneral.loc[: , n2] * gene.w2 + dfDatesGeneral.loc[: , n3] * gene.w3
-	dfDatesGeneral['total' + str(it)] = totalSum #beacuse it is an average in my opinion
+	dfDatesGeneral['total' + str(it)] = totalSum 
+	
 	stdDevTot = getStdDev(dfDatesGeneral['total' + str(it)])
 	annualizedReturnTot = getAnnualizedReturn( dateBegin, dateEnd, 'total' + str(it), dfDatesGeneral )
 	sharpeTot = annualizedReturnTot / stdDevTot
+
 	if(isPlot == 1):
 		dfDatesGeneral.plot()
 	return annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral
