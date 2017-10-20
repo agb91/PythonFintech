@@ -18,19 +18,28 @@ def dateDifferenceYears( dateBegin , dateEnd ):
 def getStdDev( column ):
 	return np.std(column)	
 
-def getAnnualizedReturn( dateBegin, dateEnd, colname, column ):
+#already normalized at 100...
+def getAnnualizedReturn( dateBegin, dateEnd, colname, column, tax, commissions  ):
 	beginValue = column.loc[dateBegin , colname]
 	endValue = column.loc[dateEnd , colname]
-	return (( endValue - beginValue ) / dateDifferenceYears(dateBegin , dateEnd))
+	#let's consided taxes and brokerage commissions
 
-def analyzeData( path , dateRange, dateBegin, dateEnd, closeColumname ):
+	gross = (( endValue - beginValue ) / beginValue) * 100
+	gross = gross / dateDifferenceYears(dateBegin , dateEnd)
+	#print(" GROSS :   " + str(gross)  )
+	#print( "tax: " + str(tax) + " comms : " + str(commissions) )
+	net = ( gross * ( 1.0 - float(tax) ) ) - float(commissions)
+	#print( "NET : " + str(net) )
+	return (net )
+
+def analyzeData( path , dateRange, dateBegin, dateEnd, closeColumname, tax ):
 	dfOb = pd.read_csv(path, index_col='Date', parse_dates=True, na_values=['nan'])
 	dfDatesOb = dateRange.join(dfOb)
 	#the following line normalizes the values
 	dfDatesOb = dfDatesOb[['AdjClose']] * ( 100 / dfDatesOb.loc[dateBegin , 'AdjClose'])
 	dfDatesOb.columns = [closeColumname]
 	stdDevOb = getStdDev(dfDatesOb[closeColumname])
-	annualizedReturnOb = getAnnualizedReturn( dateBegin, dateEnd, closeColumname, dfDatesOb )
+	annualizedReturnOb = getAnnualizedReturn( dateBegin, dateEnd, closeColumname, dfDatesOb , float(tax) , float(1.0) )
 	sharpeOb = annualizedReturnOb / stdDevOb
 	return annualizedReturnOb, stdDevOb , sharpeOb, dfDatesOb
 
@@ -54,7 +63,9 @@ def tripleMerger( first, second, third , gene, n1, n2, n3, dateBegin, dateEnd, i
 	dfDatesGeneral['total' + str(it)] = totalSum 
 	dfDatesGeneral = addDD(dfDatesGeneral , 'total' + str(it) )
 	stdDevTot = getStdDev(dfDatesGeneral['total' + str(it)])
-	annualizedReturnTot = getAnnualizedReturn( dateBegin, dateEnd, 'total' + str(it), dfDatesGeneral )
+	
+	weightedTaxes = (0.125 * gene.w1) + 0.25 * (gene.w2 + gene.w3)
+	annualizedReturnTot = getAnnualizedReturn( dateBegin, dateEnd, 'total' + str(it), dfDatesGeneral, weightedTaxes, 1.0 )
 	sharpeTot = annualizedReturnTot / stdDevTot 
 	sharpeTotAdj = sharpeTot - ( dfDatesGeneral["DDs"].max() / 300.0 ) 
 	
@@ -75,26 +86,27 @@ def main():
 	print ('-------------------------- ANALYSIS PART ---------------------------')
 	#read about bonds
 	print( '##########################  BONDS  ##########################' )
-	annualizedReturnBond, stdDevBond, sharpeBond, dfDatesBond = analyzeData( 'BOND.csv', dfDates, dateBegin, dateEnd, 'AdjCloseBonds' )
+	annualizedReturnBond, stdDevBond, sharpeBond, dfDatesBond = analyzeData( 'BOND.csv', dfDates, dateBegin, dateEnd, 'AdjCloseBonds' , 0.125 )
 	print( 'standard deviation Bonds: ' + str(stdDevBond) )
 	print ( 'annualized return Bonds: ' + str( annualizedReturnBond ))
 	print ( 'Sharpe Bonds: ' + str( sharpeBond ))
 	print( '\n\n' )
 
 	print( '##########################  STOCKS  ##########################' )
-	annualizedReturnSPY, stdDevSPY, sharpeSPY, dfDatesSPY = analyzeData( 'SPY.csv', dfDates, dateBegin, dateEnd, 'AdjCloseStocks' )
+	annualizedReturnSPY, stdDevSPY, sharpeSPY, dfDatesSPY = analyzeData( 'SPY.csv', dfDates, dateBegin, dateEnd, 'AdjCloseStocks' , 0.25 )
 	print( 'standard deviation Stocks: ' + str(stdDevSPY) )
 	print ( 'annualized return Stocks: ' + str( annualizedReturnSPY ))
 	print ( 'Sharpe Stocks: ' + str( sharpeSPY ))
 	print('\n\n')
 
 	print( '##########################  GOLD  ##########################' )
-	annualizedReturnGold, stdDevGold, sharpeGold, dfDatesGold = analyzeData( 'GLD.csv', dfDates, dateBegin, dateEnd, 'AdjCloseGold' )
+	annualizedReturnGold, stdDevGold, sharpeGold, dfDatesGold = analyzeData( 'GLD.csv', dfDates, dateBegin, dateEnd, 'AdjCloseGold', 0.25 )
 	print( 'standard deviation Gold: ' + str(stdDevGold) )
 	print ( 'annualized return Gold: ' + str( annualizedReturnGold ))
 	print ( 'Sharpe Gold: ' + str( sharpeGold ))
 	print('\n\n')
-
+	
+	
 	print ('\n\n\n-------------------------- AI PART ---------------------------\n\n\n')
 	print( '##########################  TOTAL  ##########################\n' )
 
@@ -146,7 +158,6 @@ def main():
 	print( 'annualized return total AI-CREATURE: ' + str(annualizedReturnTot) )
 	print( 'Sharpe Total AI-CREATURE: ' + str( sharpeTot ) )
 	
-
 	print('\n\n')
 	
 	plt.show()
