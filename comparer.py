@@ -21,7 +21,7 @@ def getAnnualizedReturn( dateBegin, dateEnd, colname, column ):
 
 def main():
 	#set date range
-	dateBegin = '2007-11-01'
+	dateBegin = '2006-05-01'
 	dateEnd = '2017-05-01'
 	yearsLength = dateDifferenceYears( dateBegin , dateEnd )
 	print( 'we are reasoning on a span of: ' + str( yearsLength ) + ' years ' )
@@ -42,9 +42,9 @@ def main():
 	sharpeBond = annualizedReturnBond / stdDevBond
 	print ( 'Sharpe Bonds: ' + str( sharpeBond ))
 	print( '\n\n' )
-
+	
 	print( '##########################  SECOND  ##########################' )
-	dfBondMilan = pd.read_csv('BONDMilano.csv', index_col='Date', parse_dates=True, na_values=['nan'])
+	dfBondMilan = pd.read_csv('XBAEMI.csv', index_col='Date', parse_dates=True, na_values=['nan'])
 	dfDatesBondMilan = dfDates.join(dfBondMilan)
 	#the following line normalizes the values
 	dfDatesBondMilan = dfDatesBondMilan[['AdjClose']] * ( 100 / dfDatesBondMilan.loc[dateBegin , 'AdjClose'])
@@ -56,8 +56,8 @@ def main():
 	sharpeBondMilan = annualizedReturnBondMilan / stdDevBondMilan
 	print ( 'Sharpe Bonds Milan: ' + str( sharpeBondMilan ))
 	print( '\n\n' )
-	'''
-	'''
+	
+	
 	dfGold = pd.read_csv('GLD.csv', index_col='Date', parse_dates=True, na_values=['nan'])
 	dfDatesGold = dfDates.join(dfGold)
 	#the following line normalizes the values
@@ -84,8 +84,8 @@ def main():
 	sharpeCmd = annualizedReturnCmd / stdDevCmd
 	print ( 'Sharpe Commodities: ' + str( sharpeCmd ))
 	print( '\n\n' )
+	
 	'''
-
 
 	dfSpy = pd.read_csv('SPY.csv', index_col='Date', parse_dates=True, na_values=['nan'])
 	dfDatesSpy = dfDates.join(dfSpy)
@@ -100,8 +100,24 @@ def main():
 	print ( 'Sharpe SPY: ' + str( sharpeSpy ))
 	print( '\n\n' )
 
+	dfBrk = pd.read_csv('BRK-B.csv', index_col='Date', parse_dates=True, na_values=['nan'])
+	dfDatesBrk = dfDates.join(dfBrk)
+	#the following line normalizes the values
+	dfDatesBrk = dfDatesBrk[['AdjClose']] * ( 100 / dfDatesBrk.loc[dateBegin , 'AdjClose'])
+	dfDatesBrk.columns = ['AdjCloseBrk']
+	stdDevBrk = getStdDev(dfDatesBrk['AdjCloseBrk'])
+	annualizedReturnBrk = getAnnualizedReturn( dateBegin, dateEnd, 'AdjCloseBrk', dfDatesBrk )
+	print( 'standard deviation BRK: ' + str( stdDevBrk ) )
+	print ( 'annualized return BRK: ' + str( annualizedReturnBrk ))
+	sharpeBrk = annualizedReturnBrk / stdDevBrk
+	print ( 'Sharpe BRK: ' + str( sharpeBrk ))
+	print( '\n\n' )
+	
+
 	print( '##########################  TOTAL  ##########################' )
-	dfDatesGeneral = dfDatesMsci.join( dfDatesSpy )
+	dfDatesGeneral = dfDates.join( dfDatesBrk )
+	dfDatesGeneral = dfDatesGeneral.join( dfDatesSpy )
+
 
 	
 	dfDatesGeneral.plot()

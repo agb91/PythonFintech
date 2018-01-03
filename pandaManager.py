@@ -70,7 +70,12 @@ def tripleMerger( first, second, third , gene, n1, n2, n3, dateBegin, dateEnd, i
 	sharpeTotAdj = sharpeTot - ( dfDatesGeneral["DDs"].max() / 300.0 ) 
 	
 	if(isPlot == 1):
-		dfDatesGeneral.plot()
+		dfDatesToPrint = pd.DataFrame()
+		dfDatesToPrint[['Portfolio', 'Worst Drowdown']] = dfDatesGeneral[['total4', 'DDs']]
+		#I print only the minimum amount of data for the moment
+		#dfDatesToPrint = dfDatesToPrint.ix[:, ['total4', 'DDs']]
+		#print( dfDatesToPrint )
+		dfDatesToPrint.plot()
 	return annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral , sharpeTotAdj
 
 def main():

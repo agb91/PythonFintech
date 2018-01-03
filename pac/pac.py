@@ -56,7 +56,7 @@ def main():
 	dfDatesSpy['PacGainSpys'] = new_col
 	#print( dfDatesSpy )
 	
-	#
+	
 	#dfDatesSpy.columns = [['AdjCloseSpys', 'PacGainSpys']]
 	#print( "pac payments: " + str(periods) )
 	#print( dfDatesSpy['AdjCloseSpys'] )
