@@ -6,3 +6,5 @@ artificial intelligence algorithm in order to automatically build an ETF-based p
 This project uses Python3, in particural Pandas library to manage the data, and implements a simple Genetic Algorithm to create a portfolio, using as "fitness function" the analysis of the Sharpe Ratio.
 In order to improve the data representation the Matplotlib library is used to see the variation of the builded portfolio in the time.
 
+run the program by:
+python3 pandaManager.py

@@ -56,22 +56,29 @@ def addDD( df, colTotalName ):
 	df[ "DDs" ] = DDs 
 	return df
 
+#at the moment it works with 3 etfs.. so triple.. we'll modify this point
 def tripleMerger( first, second, third , gene, n1, n2, n3, dateBegin, dateEnd, it , isPlot ):
+	#I use sometimes it parameters in debugging, so I maintain it even if at the moment is
+	#useless
+	
 	dfDatesGeneral = first.join( second )
 	dfDatesGeneral = dfDatesGeneral.join( third )
 	totalSum = dfDatesGeneral.loc[: , n1] * gene.w1 + dfDatesGeneral.loc[: , n2] * gene.w2 + dfDatesGeneral.loc[: , n3] * gene.w3
-	dfDatesGeneral['total' + str(it)] = totalSum 
-	dfDatesGeneral = addDD(dfDatesGeneral , 'total' + str(it) )
-	stdDevTot = getStdDev(dfDatesGeneral['total' + str(it)])
+	dfDatesGeneral['Portfolio' + str(it)] = totalSum 
+	dfDatesGeneral = addDD(dfDatesGeneral , 'Portfolio' + str(it) )
+	stdDevTot = getStdDev(dfDatesGeneral['Portfolio' + str(it)])
 	
+	#referred to the Italian tax level (different for bonds and 'all the rest')
 	weightedTaxes = (0.125 * gene.w1) + 0.25 * (gene.w2 + gene.w3)
-	annualizedReturnTot = getAnnualizedReturn( dateBegin, dateEnd, 'total' + str(it), dfDatesGeneral, weightedTaxes, 1.0 )
+	annualizedReturnTot = getAnnualizedReturn( dateBegin, dateEnd, 'Portfolio' + str(it), dfDatesGeneral, weightedTaxes, 1.0 )
 	sharpeTot = annualizedReturnTot / stdDevTot 
+
+	#this is a formula created by me, surely something better exists
 	sharpeTotAdj = sharpeTot - ( dfDatesGeneral["DDs"].max() / 300.0 ) 
 	
 	if(isPlot == 1):
 		dfDatesToPrint = pd.DataFrame()
-		dfDatesToPrint[['Portfolio', 'Worst Drowdown']] = dfDatesGeneral[['total4', 'DDs']]
+		dfDatesToPrint[['Portfolio', 'Worst Drowdown']] = dfDatesGeneral[['Portfolio4', 'DDs']]
 		#I print only the minimum amount of data for the moment
 		#dfDatesToPrint = dfDatesToPrint.ix[:, ['total4', 'DDs']]
 		#print( dfDatesToPrint )
@@ -89,6 +96,7 @@ def main():
 	dfDates = pd.DataFrame( index = dates )
 
 	print ('-------------------------- ANALYSIS PART ---------------------------')
+	print('Simply evaluates some features of some stand-alone ETFs')
 	#read about bonds
 	print( '##########################  BONDS  ##########################' )
 	annualizedReturnBond, stdDevBond, sharpeBond, dfDatesBond = analyzeData( 'BOND.csv', dfDates, dateBegin, dateEnd, 'AdjCloseBonds' , 0.125 )
@@ -113,8 +121,10 @@ def main():
 	
 	
 	print ('\n\n\n-------------------------- AI PART ---------------------------\n\n\n')
-	print( '##########################  TOTAL  ##########################\n' )
+	
 
+	print( '##########################  TOTAL  ##########################\n' )
+	print( 'run a genetic algorithm in order to buld a diversified portfolio' )
 	epochs = 30
 	population = 20
 	breeder = Breeder()
@@ -140,6 +150,7 @@ def main():
 	topBest = breeder.getBests( 1, generation )[0]	
 	topBest.printStr()
 
+	#just to take some experiment..
 	#gene1 = Gene(0.5,0.25,0.25)
 	#annualizedReturnTot, stdDevTot, sharpeTot, dfDatesGeneral = tripleMerger( dfDatesBond, dfDatesSPY, dfDatesGold , gene1, 'AdjCloseBonds' , 'AdjCloseStocks' , 'AdjCloseGold', dateBegin, dateEnd, '1', 0)
 	#print( 'standard deviation Total: ' + str(stdDevTot) )
