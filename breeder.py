@@ -17,7 +17,7 @@ class Breeder:
 		return generation
 
 
-	def getBests( self, n , generation):
+	def get_bests( self, n , generation):
 		bests = []
 		generation.sort(key = lambda x: x.sharpe , reverse=True)
 
